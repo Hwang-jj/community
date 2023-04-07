@@ -1,0 +1,5 @@
+2023-04-07 11:41:38,526 INFO [main] c.n.LoggerTest [StartupInfoLogger.java:55] Starting LoggerTest using Java 1.8.0_351 on LAPTOP-LBLPVU7N with PID 15032 (started by 87068 in D:\hjj\idea\SpringBoot\community)
+2023-04-07 11:41:38,529 INFO [main] c.n.LoggerTest [SpringApplication.java:631] No active profile set, falling back to 1 default profile: "default"
+2023-04-07 11:41:40,309 INFO [main] o.s.b.a.w.s.WelcomePageHandlerMapping [WelcomePageHandlerMapping.java:57] Adding welcome page template: index
+2023-04-07 11:41:40,635 INFO [main] c.n.LoggerTest [StartupInfoLogger.java:61] Started LoggerTest in 2.504 seconds (JVM running for 3.29)
+2023-04-07 11:41:40,820 INFO [main] c.n.LoggerTest [LoggerTest.java:30] info log
