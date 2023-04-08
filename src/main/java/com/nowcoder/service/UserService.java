@@ -1,6 +1,8 @@
 package com.nowcoder.service;
 
+import com.nowcoder.dao.LoginTicketMapper;
 import com.nowcoder.dao.UserMapper;
+import com.nowcoder.entity.LoginTicket;
 import com.nowcoder.entity.User;
 import com.nowcoder.util.CommunityConstant;
 import com.nowcoder.util.CommunityUtil;
@@ -34,6 +36,9 @@ public class UserService implements CommunityConstant {
 
     @Autowired
     public TemplateEngine templateEngine;
+
+    @Autowired
+    public LoginTicketMapper loginTicketMapper;
 
     @Value("${community.path.domain}")
     private String domain;
@@ -104,6 +109,7 @@ public class UserService implements CommunityConstant {
         return map;
     }
 
+    //验证用户是否已激活
     public int activation(int userId, String code){
         User user = userMapper.selectById(userId);
         if (user.getStatus() == 1){
@@ -114,5 +120,72 @@ public class UserService implements CommunityConstant {
         }else {
             return ACTIVATION_FAILURE;
         }
+    }
+
+    //实现登录功能
+    public Map<String, Object> login(String username, String password, int expiredSeconds){
+
+        Map<String, Object> map = new HashMap<>();
+
+        //空值处理
+        if (StringUtils.isBlank(username)){
+            map.put("usernameMsg", "账号不能为空！");
+            return map;
+        }
+        if (StringUtils.isBlank(password)){
+            map.put("passwordMsg", "密码不能为空！");
+            return map;
+        }
+
+        //验证账号
+        User user = userMapper.selectByName(username);
+        if (user == null){
+            map.put("usernameMsg", "账号不存在！");
+            return map;
+        }
+
+        //验证账号是否激活
+        if (user.getStatus() == 0){
+            map.put("usernameMsg","该账号未激活！");
+            return map;
+        }
+
+        //验证密码
+        password = CommunityUtil.md5(password + user.getSalt());
+        if (!user.getPassword().equals(password)){
+            map.put("passwordMsg", "密码错误！");
+            return map;
+        }
+
+        //生成登录凭证
+        LoginTicket loginTicket = new LoginTicket();
+        loginTicket.setUserId(user.getId());
+        loginTicket.setTicket(CommunityUtil.generateUUID());
+        loginTicket.setStatus(0);
+        loginTicket.setExpired(new Date(System.currentTimeMillis() + expiredSeconds * 1000));
+        loginTicketMapper.insertLoginTicket(loginTicket);
+
+        map.put("ticket", loginTicket.getTicket());
+        return map;
+    }
+
+    // 实现登出功能（loginticket中的status设为1）
+    public void logout(String ticket){
+        loginTicketMapper.updateStatus(ticket,1);
+    }
+
+    //查找loginticket
+    public LoginTicket findLoginTicket(String ticket){
+        return loginTicketMapper.selectByTicket(ticket);
+    }
+
+    //更新用户头像
+    public int updateHeader(int userId, String headerUrl){
+        return userMapper.updateHeader(userId, headerUrl);
+    }
+
+    //修改用户密码
+    public void updatePassword(int userId, String password){
+        userMapper.updatePassword(userId, password);
     }
 }
