@@ -1,12 +1,15 @@
 package com.nowcoder.controller;
 
+import com.nowcoder.entity.Comment;
 import com.nowcoder.entity.DiscussPost;
+import com.nowcoder.entity.Page;
 import com.nowcoder.entity.User;
+import com.nowcoder.service.CommentService;
 import com.nowcoder.service.DiscussPostService;
 import com.nowcoder.service.UserService;
+import com.nowcoder.util.CommunityConstant;
 import com.nowcoder.util.CommunityUtil;
 import com.nowcoder.util.HostHolder;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.Date;
+import java.util.*;
 
 /**
   * @ClassName DiscussPostController
@@ -26,7 +29,7 @@ import java.util.Date;
   */ 
 @Controller
 @RequestMapping("/discuss")
-public class DiscussPostController {
+public class DiscussPostController implements CommunityConstant {
 
     @Autowired
     private DiscussPostService discussPostService;
@@ -36,6 +39,9 @@ public class DiscussPostController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private CommentService commentService;
 
     @RequestMapping(path = "/add", method = RequestMethod.POST)
     @ResponseBody
@@ -58,13 +64,71 @@ public class DiscussPostController {
     }
 
     @RequestMapping(path = "/detail/{discussPostId}", method = RequestMethod.GET)
-    public String getDiscussPost(@PathVariable("discussPostId") int discussPostId, Model model){
+    public String getDiscussPost(@PathVariable("discussPostId") int discussPostId, Model model, Page page){
         // 查询帖子
         DiscussPost post = discussPostService.findDiscussPostById(discussPostId);
         model.addAttribute("post", post);
+
         // 查询帖子作者
         User user = userService.findUserById(post.getUserId());
         model.addAttribute("user", user);
+
+        // 查询评论的分页信息
+        page.setLimit(5);
+        page.setPath("/discuss/detail/"+discussPostId);
+        page.setRows(post.getCommentCount());
+
+        // 评论：给帖子的评论
+        // 回复：给评论的评论
+
+        // 该帖子的评论列表
+        List<Comment> commentList = commentService.findCommentsByEntity
+                (ENTITY_TYPE_POST, post.getId(), page.getOffset(), page.getLimit());
+
+        // 评论VO列表
+        List<Map<String, Object>> commentVoList = new ArrayList<>();
+        if (commentList != null){
+            for (Comment comment : commentList){
+                // 评论VO
+                Map<String, Object> commentVo = new HashMap<>();
+                // 将评论的内容装到该评论的 评论Vo 中
+                commentVo.put("comment", comment);
+                // 将评论的作者装到该评论的 评论Vo 中
+                commentVo.put("user", userService.findUserById(comment.getUserId()));
+
+                // 该评论的回复列表
+                List<Comment> replyList = commentService.findCommentsByEntity
+                        (ENTITY_TYPE_COMMENT, comment.getId(), 0, Integer.MAX_VALUE);
+                // 回复的VO列表
+                List<Map<String, Object>> replyVoList = new ArrayList<>();
+                if (replyList != null){
+                    for (Comment reply : replyList){
+                        Map<String, Object> replyVo = new HashMap<>();
+                        // 将回复的内容装到该回复的 回复Vo 中
+                        replyVo.put("reply", reply);
+                        // 将回复的作者装到该回复的 回复Vo 中
+                        replyVo.put("user", userService.findUserById(reply.getUserId()));
+                        // 将回复的回复目标装到该回复的 回复Vo 中
+                        User target = reply.getTargetId() == 0 ? null : userService.findUserById(reply.getTargetId());
+                        replyVo.put("target", target);
+
+                        // 最后将每一个回复的 回复Vo 添加到 回复Vo集合 中
+                        replyVoList.add(replyVo);
+                    }
+                }
+                // 将评论的所有回复装到该评论的 评论Vo 中
+                commentVo.put("replys", replyVoList);
+
+                // 将评论的回复数量装到该评论的 评论Vo 中
+                int replyCount = commentService.findCommentCount(ENTITY_TYPE_COMMENT, comment.getId());
+                commentVo.put("replyCount", replyCount);
+
+                // 最后将每一个评论的 评论Vo 添加到 评论Vo集合 中
+                commentVoList.add(commentVo);
+            }
+        }
+
+        model.addAttribute("comments", commentVoList);
 
         return "/site/discuss-detail";
     }

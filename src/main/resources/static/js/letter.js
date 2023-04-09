@@ -5,10 +5,31 @@ $(function(){
 
 function send_letter() {
 	$("#sendModal").modal("hide");
-	$("#hintModal").modal("show");
-	setTimeout(function(){
-		$("#hintModal").modal("hide");
-	}, 2000);
+
+	// recipient-name为发送私信表单中 收信者的id
+	var toName = $("#recipient-name").val();
+	// message-text为发送私信表单中 发送的内容的id
+	var content = $("#message-text").val();
+	$.post(
+		CONTEXT_PATH + "/letter/send",
+		{"toName":toName, "content":content},
+		function (data) {
+			data = $.parseJSON(data)
+			if (data.code == 0){
+				$("#hintBody").text("发送成功！");
+			}else{
+				$("#hintBody").text(data.msg);
+			}
+
+			$("#hintModal").modal("show");
+			setTimeout(function(){
+				$("#hintModal").modal("hide");
+				// 刷新页面
+				location.reload();
+			}, 2000);
+		}
+	);
+
 }
 
 function delete_msg() {
