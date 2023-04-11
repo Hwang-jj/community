@@ -2,7 +2,10 @@ package com.nowcoder.controller;
 
 import com.nowcoder.annotation.LoginRequired;
 import com.nowcoder.entity.User;
+import com.nowcoder.service.FollowService;
+import com.nowcoder.service.LikeService;
 import com.nowcoder.service.UserService;
+import com.nowcoder.util.CommunityConstant;
 import com.nowcoder.util.CommunityUtil;
 import com.nowcoder.util.HostHolder;
 import com.sun.org.apache.xerces.internal.impl.xpath.regex.REUtil;
@@ -34,7 +37,7 @@ import java.io.OutputStream;
   */ 
 @Controller
 @RequestMapping("/user")
-public class UserController {
+public class UserController implements CommunityConstant {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
@@ -52,6 +55,12 @@ public class UserController {
 
     @Autowired
     private HostHolder hostHolder;
+
+    @Autowired
+    private LikeService likeService;
+
+    @Autowired
+    private FollowService followService;
 
     // 访问用户设置页面
     @LoginRequired
@@ -87,7 +96,7 @@ public class UserController {
             //存储文件
             headerImage.transferTo(dest);
         } catch (IOException e) {
-            logger.error("上床文件失败："+e.getMessage());
+            logger.error("上传文件失败："+e.getMessage());
             throw new RuntimeException("上传文件失败，服务器发生异常！",e);
         }
 
@@ -159,5 +168,34 @@ public class UserController {
         userService.updatePassword(user.getId(), CommunityUtil.md5(newPassword + user.getSalt()));
         userService.logout(ticket);
         return "redirect:/login";
+    }
+
+    // 个人主页
+    @RequestMapping(path = "/profile/{userId}", method = RequestMethod.GET)
+    public String getProfilePage(@PathVariable("userId") int userId, Model model){
+        User user = userService.findUserById(userId);
+        if (user == null){
+            throw new RuntimeException("该用户不存在");
+        }
+
+        // 用户
+        model.addAttribute("user", user);
+        // 获赞数量
+        int likeCount = likeService.findUserLikeCount(userId);
+        model.addAttribute("likeCount", likeCount);
+        // 关注数量
+        long followeeCount = followService.findFolloweeCount(userId, ENTITY_TYPE_USER);
+        model.addAttribute("followeeCount", followeeCount);
+        // 粉丝数量
+        long followerCount = followService.findFollowerCount(ENTITY_TYPE_USER, userId);
+        model.addAttribute("followerCount", followerCount);
+        // 是否已关注
+        boolean hasFollowed = false;
+        if (hostHolder.getUser() != null){
+            hasFollowed = followService.hasFollowed(hostHolder.getUser().getId(), ENTITY_TYPE_USER, userId);
+        }
+        model.addAttribute("hasFollowed", hasFollowed);
+
+        return "/site/profile";
     }
 }
