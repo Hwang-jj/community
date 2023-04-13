@@ -58,4 +58,14 @@ public class DiscussPostService {
     public int updateCommentCount(int id, int commentCount){
         return discussPostMapper.updateCommentCount(id, commentCount);
     }
+
+    // 修改帖子类型：1为置顶，0为普通
+    public int updateType(int id, int type){
+        return discussPostMapper.updateType(id, type);
+    }
+
+    // 修改帖子状态：0为普通，1为加精，2为删除
+    public int updateStatus(int id, int status){
+        return discussPostMapper.updateStatus(id, status);
+    }
 }

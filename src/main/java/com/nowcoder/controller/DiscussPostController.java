@@ -1,9 +1,7 @@
 package com.nowcoder.controller;
 
-import com.nowcoder.entity.Comment;
-import com.nowcoder.entity.DiscussPost;
-import com.nowcoder.entity.Page;
-import com.nowcoder.entity.User;
+import com.nowcoder.entity.*;
+import com.nowcoder.event.EventProducer;
 import com.nowcoder.service.CommentService;
 import com.nowcoder.service.DiscussPostService;
 import com.nowcoder.service.LikeService;
@@ -47,6 +45,9 @@ public class DiscussPostController implements CommunityConstant {
     @Autowired
     private LikeService likeService;
 
+    @Autowired
+    private EventProducer eventProducer;
+
     @RequestMapping(path = "/add", method = RequestMethod.POST)
     @ResponseBody
     public String addDiscussPost(String title, String content){
@@ -62,6 +63,14 @@ public class DiscussPostController implements CommunityConstant {
         post.setContent(content);
         post.setCreateTime(new Date());
         discussPostService.addDiscussPost(post);
+
+        // 触发发帖事件
+        Event event = new Event()
+                .setTopic(TOPIC_PUBLISH)
+                .setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(post.getId());
+        eventProducer.fireEvent(event);
 
         // 报错的情况将来统一处理！
         return CommunityUtil.getJSONString(0,"发布成功！");
@@ -159,6 +168,74 @@ public class DiscussPostController implements CommunityConstant {
         model.addAttribute("comments", commentVoList);
 
         return "/site/discuss-detail";
+    }
+
+    // 置顶与取消置顶
+    @RequestMapping(path = "/top", method = RequestMethod.POST)
+    @ResponseBody
+    public String setTop(Integer id){
+//        discussPostService.updateType(id, 1);
+        DiscussPost discussPost = discussPostService.findDiscussPostById(id);
+        // 获取帖子状态，1为置顶，0为普通，1^1=0，0^1=1
+        // 异或操作将置顶帖子变为普通帖子，普通帖子变为置顶帖子，从而实现帖子的置顶状态更改
+        int type = discussPost.getType() ^ 1;
+        discussPostService.updateType(id, type);
+
+        // 返回的结果
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", type);
+
+        // 触发发帖事件
+        Event event = new Event()
+                .setTopic(TOPIC_PUBLISH)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return CommunityUtil.getJSONString(0, null, map);
+    }
+
+    // 加精与取消加精
+    @RequestMapping(path = "/wonderful", method = RequestMethod.POST)
+    @ResponseBody
+    public String setWonderful(int id){
+//        discussPostService.updateStatus(id, 1);
+        DiscussPost discussPost = discussPostService.findDiscussPostById(id);
+        // 获取帖子状态，1为加精，0为普通，1^1=0，0^1=1
+        int status = discussPost.getStatus() ^ 1;
+        discussPostService.updateStatus(id, status);
+
+        // 返回的结果
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", status);
+
+        // 触发发帖事件
+        Event event = new Event()
+                .setTopic(TOPIC_PUBLISH)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return CommunityUtil.getJSONString(0, null, map);
+    }
+
+    // 删除
+    @RequestMapping(path = "/delete", method = RequestMethod.POST)
+    @ResponseBody
+    public String setDelete(Integer id){
+        discussPostService.updateStatus(id, 2);
+
+        // 触发删帖事件
+        Event event = new Event()
+                .setTopic(TOPIC_DELETE)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(id);
+        eventProducer.fireEvent(event);
+
+        return CommunityUtil.getJSONString(0);
     }
 
 }
