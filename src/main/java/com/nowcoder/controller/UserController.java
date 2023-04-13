@@ -1,13 +1,15 @@
 package com.nowcoder.controller;
 
 import com.nowcoder.annotation.LoginRequired;
+import com.nowcoder.entity.Comment;
+import com.nowcoder.entity.DiscussPost;
+import com.nowcoder.entity.Page;
 import com.nowcoder.entity.User;
-import com.nowcoder.service.FollowService;
-import com.nowcoder.service.LikeService;
-import com.nowcoder.service.UserService;
+import com.nowcoder.service.*;
 import com.nowcoder.util.CommunityConstant;
 import com.nowcoder.util.CommunityUtil;
 import com.nowcoder.util.HostHolder;
+import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
 import com.sun.org.apache.xerces.internal.impl.xpath.regex.REUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,6 +29,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
   * @ClassName UserController
@@ -61,6 +67,12 @@ public class UserController implements CommunityConstant {
 
     @Autowired
     private FollowService followService;
+
+    @Autowired
+    private DiscussPostService discussPostService;
+
+    @Autowired
+    private CommentService commentService;
 
     // 访问用户设置页面
     @LoginRequired
@@ -197,5 +209,83 @@ public class UserController implements CommunityConstant {
         model.addAttribute("hasFollowed", hasFollowed);
 
         return "/site/profile";
+    }
+
+    // 获取用户的帖子列表
+    @RequestMapping(path = "/discussPostList/{userId}", method = RequestMethod.GET)
+    public String getDiscussPostList(@PathVariable("userId") int userId, Model model, Page page){
+        // 查询用户
+        User user = userService.findUserById(userId);
+        model.addAttribute("user", user);
+
+        // 查询用户发布帖子数
+        int postCount = discussPostService.findDiscussPostRows(userId);
+        model.addAttribute("postCount", postCount);
+
+        // 查询帖子的分页信息
+        page.setLimit(5);
+        page.setPath("/user/discussPostList/" + userId);
+        page.setRows(postCount);
+
+        // 帖子的列表
+        List<DiscussPost> postList = discussPostService.findDiscussPosts(userId, page.getOffset(), page.getLimit());
+
+        //帖子VO列表
+        List<Map<String, Object>> postVoList = new ArrayList<>();
+        if (postList != null){
+            for (DiscussPost post : postList){
+                // 帖子Vo
+                Map<String, Object> postVo = new HashMap<>();
+                // 将帖子的内容装到该帖子的 帖子Vo 中
+                postVo.put("post", post);
+                // 帖子的点赞数
+                long likeCount = likeService.findEntityLikeCount(ENTITY_TYPE_POST, post.getId());
+                postVo.put("likeCount", likeCount);
+
+                postVoList.add(postVo);
+            }
+        }
+
+        model.addAttribute("posts", postVoList);
+
+        return "/site/my-post";
+    }
+
+    // 获取用户的评论列表
+    @RequestMapping(path = "/commentList/{userId}", method = RequestMethod.GET)
+    public String getCommentList(@PathVariable("userId") int userId, Model model, Page page){
+        // 查询用户
+        User user = userService.findUserById(userId);
+        model.addAttribute("user", user);
+
+        // 查询用户发布评论数
+        int commentCount = commentService.findCommentCountByUserId(userId, ENTITY_TYPE_POST);
+        model.addAttribute("commentCount", commentCount);
+
+        // 查询评论的分页信息
+        page.setLimit(10);
+        page.setPath("/user/commentList/" + userId);
+        page.setRows(commentCount);
+
+        // 评论列表
+        List<Comment> commentList = commentService.findCommentsByUserId(userId, ENTITY_TYPE_POST, page.getOffset(), page.getLimit());
+
+        // 评论VO列表
+        List<Map<String, Object>> commentVoList = new ArrayList<>();
+        if (commentList != null){
+            for (Comment comment : commentList){
+                // 评论Vo
+                Map<String, Object> commentVo = new HashMap<>();
+                // 将评论的内容装到该评论的 评论Vo 中
+                commentVo.put("comment", comment);
+                // 将评论的帖子装到该评论的 评论Vo 中
+                commentVo.put("post", discussPostService.findDiscussPostById(comment.getEntityId()));
+
+                commentVoList.add(commentVo);
+            }
+        }
+        model.addAttribute("comments", commentVoList);
+
+        return "/site/my-reply";
     }
 }

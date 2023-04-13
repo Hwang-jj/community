@@ -31,4 +31,6 @@ public interface DiscussPostMapper {
 
     // 修改帖子状态
     int updateStatus(int id, int status);
+
+
 }
