@@ -12,7 +12,7 @@ import java.util.List;
 public interface DiscussPostMapper {
 
     //显示评论
-    List<DiscussPost> selectDiscussPosts(@Param("userId") int userId, int offset, int limit);
+    List<DiscussPost> selectDiscussPosts(@Param("userId") int userId, int offset, int limit, int orderMode);
 
     //查询帖子的行数
     int selectDiscussPostRows(int userId);
@@ -32,5 +32,7 @@ public interface DiscussPostMapper {
     // 修改帖子状态
     int updateStatus(int id, int status);
 
+    // 更新帖子分数
+    int updateScore(int id, double score);
 
 }
