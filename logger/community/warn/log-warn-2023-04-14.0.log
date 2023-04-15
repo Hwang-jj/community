@@ -1,0 +1,17 @@
+2023-04-14 16:00:17,730 WARN [restartedMain] o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext [AbstractApplicationContext.java:557] Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'quartzScheduler' defined in class path resource [org/springframework/boot/autoconfigure/quartz/QuartzAutoConfiguration.class]: Invocation of init method failed; nested exception is org.quartz.JobPersistenceException: Couldn't retrieve job: Table 'mybatis.qrtz_job_details' doesn't exist [See nested exception: java.sql.SQLSyntaxErrorException: Table 'mybatis.qrtz_job_details' doesn't exist]
+2023-04-14 20:53:36,138 WARN [http-nio-8080-exec-1] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver [AbstractHandlerExceptionResolver.java:199] Resolved [org.springframework.jdbc.UncategorizedSQLException: 
+### Error updating database.  Cause: java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0A\xE7...' for column 'content' at row 1
+### The error may exist in file [D:\hjj\idea\SpringBoot\community\target\classes\mapper\DiscussPostMapper.xml]
+### The error may involve com.nowcoder.dao.DiscussPostMapper.insertDiscussPost-Inline
+### The error occurred while setting parameters
+### SQL: insert into community.discuss_post(          user_id,title,content,type,status,create_time,comment_count,score      )         values(?,?,?,?,?,?,?,?)
+### Cause: java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0A\xE7...' for column 'content' at row 1
+; uncategorized SQLException; SQL state [HY000]; error code [1366]; Incorrect string value: '\xF0\x9F\x98\x8E\x0A\xE7...' for column 'content' at row 1; nested exception is java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0A\xE7...' for column 'content' at row 1]
+2023-04-14 20:58:08,404 WARN [http-nio-8080-exec-7] o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver [AbstractHandlerExceptionResolver.java:199] Resolved [org.springframework.jdbc.UncategorizedSQLException: 
+### Error updating database.  Cause: java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0D\x0A...' for column 'content' at row 1
+### The error may exist in file [D:\hjj\idea\SpringBoot\community\target\classes\mapper\CommentMapper.xml]
+### The error may involve com.nowcoder.dao.CommentMapper.insertComment-Inline
+### The error occurred while setting parameters
+### SQL: insert into community.comment(          user_id, entity_type, entity_id, target_id, content, status, create_time      )         values (?, ?, ?, ?, ?, ?, ?)
+### Cause: java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0D\x0A...' for column 'content' at row 1
+; uncategorized SQLException; SQL state [HY000]; error code [1366]; Incorrect string value: '\xF0\x9F\x98\x8E\x0D\x0A...' for column 'content' at row 1; nested exception is java.sql.SQLException: Incorrect string value: '\xF0\x9F\x98\x8E\x0D\x0A...' for column 'content' at row 1]
